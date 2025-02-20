@@ -10,6 +10,9 @@
 # Ignore log files
 *.log
 
+# Ignore rest test files
+*.rest
+
 # Ignore test binaries
 *.test
 

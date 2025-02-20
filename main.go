@@ -1,36 +1,34 @@
 package main
 
 import (
-	"log"
-	"os"
+	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/masintxi/gamehub/internal/api"
+	"github.com/masintxi/gamehub/internal/cache"
 )
 
-type apiConfig struct {
-	apiKey  string
-	steamID string
+type Config struct {
+	client *api.Client
 }
 
 func main() {
-	// Replace with your Steam API key and SteamID
-	godotenv.Load()
-	apiKey := os.Getenv("STEAM_API_KEY")
-	if apiKey == "" {
-		log.Fatal("STEAM_API_KEY not setted. Check .env file")
-	}
-	steamID := os.Getenv("STEAM_USER_ID")
-	if steamID == "" {
-		log.Fatal("STEAM_USER_ID not setted. Check .env file")
+
+	cfg := Config{
+		client: api.NewClient(cache.CacheConfig{
+			ProjectName:     "gamehub",
+			CleanupInterval: 5 * time.Second,
+			MaxSize:         1024 * 1024 * 10, // 10 MB
+			FileExtension:   "json",
+			ExpireAfter:     30 * time.Minute,
+			Compression:     true,
+			CachePath:       "",
+		}),
 	}
 
-	cfg := apiConfig{
-		apiKey:  apiKey,
-		steamID: steamID,
-	}
+	cfg.client.GetUserGames()
 
-	//cfg.GetUserData()
-	//cfg.GetGameData("2457220")
-	//cfg.GetGameStats("2457220")
-	cfg.GetUserGames()
 }
+
+//cfg.GetUserData()
+//cfg.GetGameData("2457220")
+//cfg.GetGameStats("2457220")

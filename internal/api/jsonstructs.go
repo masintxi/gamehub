@@ -1,4 +1,4 @@
-package main
+package api
 
 type GameData struct {
 	Success bool `json:"success"`
@@ -36,7 +36,29 @@ type GameData struct {
 	} `json:"data"`
 }
 
-type GameDataold struct {
+type GameFromList struct {
+	AppID                    int    `json:"appid"`
+	Name                     string `json:"name"`
+	PlaytimeForever          int    `json:"playtime_forever"`
+	ImgIconURL               string `json:"img_icon_url"`
+	HasCommunityVisibleStats bool   `json:"has_community_visible_stats,omitempty"`
+	PlaytimeWindowsForever   int    `json:"playtime_windows_forever"`
+	PlaytimeMacForever       int    `json:"playtime_mac_forever"`
+	PlaytimeLinuxForever     int    `json:"playtime_linux_forever"`
+	PlaytimeDeckForever      int    `json:"playtime_deck_forever"`
+	RtimeLastPlayed          int    `json:"rtime_last_played"`
+	CapsuleFilename          string `json:"capsule_filename"`
+	HasWorkshop              bool   `json:"has_workshop"`
+	HasMarket                bool   `json:"has_market"`
+	HasDlc                   bool   `json:"has_dlc"`
+	ContentDescriptorids     []int  `json:"content_descriptorids,omitempty"`
+	PlaytimeDisconnected     int    `json:"playtime_disconnected"`
+	HasLeaderboards          bool   `json:"has_leaderboards,omitempty"`
+	SortAs                   string `json:"sort_as,omitempty"`
+	Playtime2Weeks           int    `json:"playtime_2weeks,omitempty"`
+}
+
+type GameDataFull struct {
 	Success bool `json:"success"`
 	Data    struct {
 		Type                string `json:"type"`
