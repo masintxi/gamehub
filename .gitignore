@@ -43,3 +43,6 @@ go.work.sum
 # IDE specific files
 .idea/
 .vscode/
+
+# Misc
+notes.txt

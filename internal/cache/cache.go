@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,12 +29,20 @@ type CacheConfig struct {
 	CachePath       string        // Optional custom path override
 }
 
+type CacheStats struct {
+	Hits          uint64
+	Misses        uint64
+	Evictions     uint64
+	TotalRequests uint64
+}
+
 type Cache struct {
 	cache       map[string]cacheEntry
 	mu          *sync.Mutex
 	filePath    string
 	config      CacheConfig
 	currentSize int64
+	stats       CacheStats
 }
 
 func NewCache(config CacheConfig) *Cache {
@@ -57,6 +66,7 @@ func NewCache(config CacheConfig) *Cache {
 		cache:  make(map[string]cacheEntry),
 		mu:     &sync.Mutex{},
 		config: config,
+		stats:  CacheStats{},
 	}
 	if err := c.CreateCacheDir(); err != nil {
 		log.Printf("Warning: Cache directory creation failed: %v. Continuing with in-memory cache only\n", err)
@@ -118,9 +128,20 @@ func (c *Cache) Add(key string, val []byte) {
 func (c *Cache) Get(key string) ([]byte, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	atomic.AddUint64(&c.stats.TotalRequests, 1)
+
 	if entry, ok := c.cache[key]; ok {
+		if time.Since(entry.CreatedAt) > c.config.ExpireAfter {
+			atomic.AddUint64(&c.stats.Evictions, 1)
+			delete(c.cache, key)
+			c.currentSize -= entry.Size
+			return nil, false
+		}
+		atomic.AddUint64(&c.stats.Hits, 1)
 		return entry.Val, true
 	}
+	atomic.AddUint64(&c.stats.Misses, 1)
 	return nil, false
 }
 
@@ -268,4 +289,33 @@ func getCacheFilePath(config CacheConfig) string {
 	}
 
 	return filepath.Join(cacheDir, filename)
+}
+
+func (c *Cache) GetStats() CacheStats {
+	return CacheStats{
+		Hits:          atomic.LoadUint64(&c.stats.Hits),
+		Misses:        atomic.LoadUint64(&c.stats.Misses),
+		Evictions:     atomic.LoadUint64(&c.stats.Evictions),
+		TotalRequests: atomic.LoadUint64(&c.stats.TotalRequests),
+	}
+}
+
+func (c *Cache) GetHitRatio() float64 {
+	hits := atomic.LoadUint64(&c.stats.Hits)
+	total := atomic.LoadUint64(&c.stats.TotalRequests)
+	if total == 0 {
+		return 0.0
+	}
+	return float64(hits) / float64(total)
+}
+
+func (c *Cache) PrintStats() {
+	stats := c.GetStats()
+	fmt.Printf("Cache Statistics:\n")
+	fmt.Printf("  Total Requests: %d\n", stats.TotalRequests)
+	fmt.Printf("  Hits: %d\n", stats.Hits)
+	fmt.Printf("  Misses: %d\n", stats.Misses)
+	fmt.Printf("  Evictions: %d\n", stats.Evictions)
+	fmt.Printf("  Hit Ratio: %.2f%%\n", c.GetHitRatio()*100)
+	fmt.Printf("  Current Size: %.2f MB\n", float64(c.currentSize)/(1024*1024))
 }

@@ -1,34 +1,45 @@
 package main
 
 import (
-	"time"
+	"log"
 
-	"github.com/masintxi/gamehub/internal/api"
+	"github.com/masintxi/gamehub/internal/auth"
 	"github.com/masintxi/gamehub/internal/cache"
+	"github.com/masintxi/gamehub/internal/client"
+	"github.com/masintxi/gamehub/internal/config"
+	"github.com/masintxi/gamehub/internal/server"
 )
 
-type Config struct {
-	client *api.Client
-}
-
 func main() {
+	cfg := config.Load()
 
-	cfg := Config{
-		client: api.NewClient(cache.CacheConfig{
-			ProjectName:     "gamehub",
-			CleanupInterval: 5 * time.Second,
-			MaxSize:         1024 * 1024 * 10, // 10 MB
-			FileExtension:   "json",
-			ExpireAfter:     30 * time.Minute,
-			Compression:     true,
-			CachePath:       "",
-		}),
+	client := client.NewClient(cache.CacheConfig{
+		ProjectName:     cfg.Cache.ProjectName,
+		CleanupInterval: cfg.Cache.CleanupInterval,
+		MaxSize:         cfg.Cache.MaxSize,
+		FileExtension:   cfg.Cache.FileExtension,
+		ExpireAfter:     cfg.Cache.ExpireAfter,
+		Compression:     cfg.Cache.Compression,
+		CachePath:       cfg.Cache.CachePath,
+	})
+
+	steamAuth := auth.NewSteamAuth(
+		cfg.SteamAPIKey,
+		cfg.SteamCallbackURL,
+	)
+
+	server := server.NewServer(client, steamAuth, cfg)
+
+	if err := server.Start(); err != nil {
+		log.Fatal(err)
 	}
-
-	cfg.client.GetUserGames()
-
 }
 
+// fmt.Println("Starting server on :8080")
+// log.Fatal(http.ListenAndServe(":8080", r))
+
+//cfg.client.GetUserGames()
+//cfg.client.ListInventory()
 //cfg.GetUserData()
 //cfg.GetGameData("2457220")
 //cfg.GetGameStats("2457220")
