@@ -39,6 +39,8 @@ func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {
 				<br/>
 				<a href="/user-games">View User Games</a>
 				<br/>
+				<a href="/market/311690-Frifle and Mauser">Market Price for Frifle and Mauser</a>
+				<br/>
             </body>
         </html>
     `)

@@ -6,10 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 )
 
 type MarketPriceHistory struct {
@@ -33,19 +30,19 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	marketHashName := chi.URLParam(r, "market_hash_name")
-	if marketHashName == "" {
-		http.Error(w, "Market hash name is required", http.StatusBadRequest)
-		return
-	}
-	marketHashName = url.QueryEscape(marketHashName)
-	marketHashName = strings.ReplaceAll(marketHashName, "+", "%20")
+	// marketHashName := chi.URLParam(r, "market_hash_name")
+	// if marketHashName == "" {
+	// 	http.Error(w, "Market hash name is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// marketHashName = url.QueryEscape(marketHashName)
+	// marketHashName = strings.ReplaceAll(marketHashName, "+", "%20")
 
 	// Steam Market API URL for price history
 	// url := fmt.Sprintf("https://steamcommunity.com/market/pricehistory/?appid=753&market_hash_name=%s", url.QueryEscape(marketHashName))
 
 	//baseURL := fmt.Sprintf("https://steamcommunity.com/market/listings/753/%s/render/history", marketHashName)
-	baseURL := "https://steamcommunity.com/market/pricehistory/"
+	baseURL := "https://steamcommunity.com/market/itemordershistogram"
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		http.Error(w, "Failed to parse URL", http.StatusInternalServerError)
@@ -53,14 +50,11 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 	}
 
 	q := u.Query()
-	q.Add("appid", "753")
-	q.Add("market_hash_name", marketHashName)
+	q.Add("country", "ES")
+	q.Add("language", "english")
+	q.Add("currency", "3") // 3 is for EUR
+	q.Add("item_nameid", "150084592")
 	u.RawQuery = q.Encode()
-
-	// Add more detailed debug logging
-	log.Printf("Final URL: %s", u.String())
-	log.Printf("Market Hash Name (raw): %s", chi.URLParam(r, "market_hash_name"))
-	log.Printf("Market Hash Name (encoded): %s", marketHashName)
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -90,6 +84,8 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 			Name:  "sessionid",
 			Value: sessionID,
 		})
+	} else {
+		log.Printf("sessionid cookie not found")
 	}
 
 	// Add steamCountry cookie
@@ -98,6 +94,17 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 			Name:  "steamCountry",
 			Value: steamCountry,
 		})
+	} else {
+		log.Printf("steamCountry cookie not found")
+	}
+
+	if steamLoginSecure, ok := session.Values["steamLoginSecure"].(string); ok {
+		req.AddCookie(&http.Cookie{
+			Name:  "steamLoginSecure",
+			Value: steamLoginSecure,
+		})
+	} else {
+		log.Printf("steamLoginSecure cookie not found")
 	}
 
 	// Add timezoneOffset cookie
@@ -114,8 +121,8 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 		Timeout: 30 * time.Second,
 	}
 
-	log.Printf("Requesting URL: %s", u.String())
-	log.Printf("With cookies: %v", req.Cookies())
+	// log.Printf("Requesting URL: %s", u.String())
+	// log.Printf("With cookies: %v", req.Cookies())
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -124,11 +131,11 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Steam Error - Status: %d", resp.StatusCode)
-		log.Printf("Steam Error - Headers: %v", resp.Header)
-		log.Printf("Steam Error - URL: %s", baseURL)
-	}
+	// if resp.StatusCode != http.StatusOK {
+	// 	log.Printf("Steam Error - Status: %d", resp.StatusCode)
+	// 	log.Printf("Steam Error - Headers: %v", resp.Header)
+	// 	log.Printf("Steam Error - URL: %s", baseURL)
+	// }
 
 	var body []byte
 	if resp.Header.Get("Content-Encoding") == "gzip" {
@@ -151,8 +158,8 @@ func (h *SteamHandlers) HandleMarketData(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	log.Printf("Response Status: %d", resp.StatusCode)
-	log.Printf("Response Body: %s", string(body))
+	// log.Printf("Response Status: %d", resp.StatusCode)
+	// log.Printf("Response Body: %s", string(body))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
