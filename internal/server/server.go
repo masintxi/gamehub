@@ -8,20 +8,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/masintxi/gamehub/internal/auth"
 	"github.com/masintxi/gamehub/internal/client"
-	"github.com/masintxi/gamehub/internal/config"
 	"github.com/masintxi/gamehub/internal/handlers"
 )
 
 type Server struct {
-	router    chi.Router
-	client    *client.Client
-	steamAuth *auth.SteamAuth
-	handlers  *handlers.SteamHandlers
-	port      string
-	domain    string
+	Router    chi.Router
+	Client    *client.Client
+	SteamAuth *auth.SteamAuth
+	Handlers  *handlers.SteamHandlers
+	Port      string
+	Domain    string
 }
 
-func NewServer(client *client.Client, steamAuth *auth.SteamAuth, cfg *config.Config) *Server {
+func NewServer(client *client.Client, steamAuth *auth.SteamAuth, server *Server) *Server {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -30,14 +29,10 @@ func NewServer(client *client.Client, steamAuth *auth.SteamAuth, cfg *config.Con
 
 	handlers := handlers.NewSteamHandlers(client, steamAuth)
 
-	server := &Server{
-		router:    r,
-		client:    client,
-		steamAuth: steamAuth,
-		handlers:  handlers,
-		port:      cfg.Server.Port,
-		domain:    cfg.Server.Domain,
-	}
+	server.Router = r
+	server.Client = client
+	server.SteamAuth = steamAuth
+	server.Handlers = handlers
 
 	// Setup routes
 	server.SetupRoutes()
@@ -46,7 +41,7 @@ func NewServer(client *client.Client, steamAuth *auth.SteamAuth, cfg *config.Con
 }
 
 func (s *Server) Start() error {
-	fmt.Println("Starting server on :" + s.port)
-	addr := fmt.Sprintf("%s:%s", s.domain, s.port)
-	return http.ListenAndServe(addr, s.router)
+	fmt.Println("Starting server on :" + s.Port)
+	addr := fmt.Sprintf("%s:%s", s.Domain, s.Port)
+	return http.ListenAndServe(addr, s.Router)
 }

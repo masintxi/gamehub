@@ -1,35 +1,26 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/masintxi/gamehub/internal/auth"
+	"github.com/masintxi/gamehub/internal/cache"
+	"github.com/masintxi/gamehub/internal/server"
 )
 
 type Config struct {
+	// Server Configuration
+	Server server.Server
+
 	// Steam Configuration
-	SteamAPIKey      string
-	SteamUserID      string
-	SteamCallbackURL string
+	SteamAuth auth.SteamAuth
 
 	// Cache Configuration
-	Cache struct {
-		ProjectName     string
-		CleanupInterval time.Duration
-		MaxSize         int64
-		FileExtension   string
-		ExpireAfter     time.Duration
-		Compression     bool
-		CachePath       string
-	}
-
-	// Server Configuration
-	Server struct {
-		Port   string
-		Domain string
-	}
+	CacheConfig cache.CacheConfig
 }
 
 func Load() *Config {
@@ -38,25 +29,6 @@ func Load() *Config {
 	}
 
 	cfg := &Config{}
-
-	// Load Steam config
-	cfg.SteamAPIKey = os.Getenv("STEAM_API_KEY")
-	if cfg.SteamAPIKey == "" {
-		log.Fatal("STEAM_API_KEY not set")
-	}
-	cfg.SteamUserID = os.Getenv("STEAM_USER_ID")
-	if cfg.SteamUserID == "" {
-		log.Fatal("STEAM_USER_ID not set")
-	}
-	cfg.SteamCallbackURL = "http://localhost:8080/auth/steam/callback"
-
-	// Set cache config
-	cfg.Cache.ProjectName = "gamehub"
-	cfg.Cache.CleanupInterval = 5 * time.Second
-	cfg.Cache.MaxSize = 1024 * 1024 * 10 // 10 MB
-	cfg.Cache.FileExtension = "json"
-	cfg.Cache.ExpireAfter = 30 * time.Minute
-	cfg.Cache.Compression = true
 
 	// Set server config
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
@@ -67,6 +39,27 @@ func Load() *Config {
 	if cfg.Server.Domain == "" {
 		cfg.Server.Domain = "localhost"
 	}
+
+	// Load Steam config
+	cfg.SteamAuth.ApiKey = os.Getenv("STEAM_API_KEY")
+	if cfg.SteamAuth.ApiKey == "" {
+		log.Fatal("STEAM_API_KEY not set")
+	}
+	// cfg.SteamAuth.SteamUserID = os.Getenv("STEAM_USER_ID")
+	// if cfg.SteamAuth.SteamUserID == "" {
+	// 	log.Fatal("STEAM_USER_ID not set")
+	// }
+
+	cfg.SteamAuth.CallbackURL = fmt.Sprintf("http://%s:%s/auth/steam/callback",
+		cfg.Server.Domain, cfg.Server.Port)
+
+	// Set cache config
+	cfg.CacheConfig.ProjectName = "gamehub"
+	cfg.CacheConfig.CleanupInterval = 5 * time.Second
+	cfg.CacheConfig.MaxSize = 1024 * 1024 * 10 // 10 MB
+	cfg.CacheConfig.FileExtension = "json"
+	cfg.CacheConfig.Compression = true
+	cfg.CacheConfig.ExpireAfter = 30 * time.Minute
 
 	return cfg
 }

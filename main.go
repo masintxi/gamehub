@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/masintxi/gamehub/internal/auth"
-	"github.com/masintxi/gamehub/internal/cache"
 	"github.com/masintxi/gamehub/internal/client"
 	"github.com/masintxi/gamehub/internal/config"
 	"github.com/masintxi/gamehub/internal/server"
@@ -13,22 +12,11 @@ import (
 func main() {
 	cfg := config.Load()
 
-	client := client.NewClient(cache.CacheConfig{
-		ProjectName:     cfg.Cache.ProjectName,
-		CleanupInterval: cfg.Cache.CleanupInterval,
-		MaxSize:         cfg.Cache.MaxSize,
-		FileExtension:   cfg.Cache.FileExtension,
-		ExpireAfter:     cfg.Cache.ExpireAfter,
-		Compression:     cfg.Cache.Compression,
-		CachePath:       cfg.Cache.CachePath,
-	})
+	client := client.NewClient(cfg.CacheConfig)
 
-	steamAuth := auth.NewSteamAuth(
-		cfg.SteamAPIKey,
-		cfg.SteamCallbackURL,
-	)
+	steamAuth := auth.NewSteamAuth(cfg.SteamAuth)
 
-	server := server.NewServer(client, steamAuth, cfg)
+	server := server.NewServer(client, steamAuth, &cfg.Server)
 
 	if err := server.Start(); err != nil {
 		log.Fatal(err)

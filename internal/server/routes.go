@@ -15,16 +15,16 @@ const (
 )
 
 func (s *Server) SetupRoutes() {
-	s.router.Get("/", s.HandleHome)
-	s.router.Route("/auth", func(r chi.Router) {
-		r.Get(authPath, s.steamAuth.HandleSteamLogin)
-		r.Get(callbackPath, s.steamAuth.HandleSteamCallback)
+	s.Router.Get("/", s.HandleHome)
+	s.Router.Route("/auth", func(r chi.Router) {
+		r.Get(authPath, s.SteamAuth.HandleSteamLogin)
+		r.Get(callbackPath, s.SteamAuth.HandleSteamCallback)
 	})
-	s.router.Get("/inventory", s.handlers.HandleInventory)
-	s.router.Get("/trade-inventory", s.handlers.HandleTradeInventory)
-	s.router.Get("/market/{market_hash_name}", s.handlers.HandleMarketData)
-	s.router.Get("/user-data", s.handlers.HandleUserData)
-	s.router.Get("/user-games", s.handlers.HandleUserGames)
+	s.Router.Get("/inventory", s.Handlers.HandleInventory)
+	s.Router.Get("/trade-inventory", s.Handlers.HandleTradeInventory)
+	s.Router.Get("/market/{market_hash_name}", s.Handlers.HandleMarketData)
+	s.Router.Get("/user-data", s.Handlers.HandleUserData)
+	s.Router.Get("/user-games", s.Handlers.HandleUserGames)
 }
 
 func (s *Server) HandleHome(w http.ResponseWriter, r *http.Request) {

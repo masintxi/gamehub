@@ -20,8 +20,8 @@ type cacheEntry struct {
 }
 
 type CacheConfig struct {
-	ProjectName     string
-	CleanupInterval time.Duration
+	ProjectName     string        // Name of the cache
+	CleanupInterval time.Duration // How often to clean up the cache
 	MaxSize         int64         // Maximum size in MB
 	FileExtension   string        // "json", "gob", etc
 	Compression     bool          // Whether to use gzip
